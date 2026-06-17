@@ -1,7 +1,7 @@
 import sys
 import argparse
 import os
-from database import BazaDannyh
+from database import DataBase
 
 def main():
     razbor = argparse.ArgumentParser(description="Индексатор папок")
