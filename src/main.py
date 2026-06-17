@@ -5,7 +5,7 @@ from database import DataBase
 from scanner import Skaner
 
 def main():
-    razbor = argparse.ArgumentParser(add_help=False)
+    razbor = argparse.ArgumentParser()
     
     razbor.add_argument("put", help="Путь к папке для индексации")
     razbor.add_argument("--scan", action="store_true", help="Выполнить сканирование папки")
