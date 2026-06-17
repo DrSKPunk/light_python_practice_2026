@@ -5,11 +5,12 @@ from database import DataBase
 from scanner import Skaner
 
 def main():
-    razbor = argparse.ArgumentParser(description="Indeksator papok")
+    razbor = argparse.ArgumentParser(add_help=False)
+    
     razbor.add_argument("put", help="Путь к папке для индексации")
-    razbor.add_argument("--db", default="file_index.db", help="Путь к файлу базы данных")
-    razbor.add_argument("--scan", action="store_true", help="Выполнить сканированние папки")
-    razbor.add_argument("--ext", nargs="+", help="Фильтр по расширениям")
+    razbor.add_argument("--scan", action="store_true", help="Выполнить сканирование папки")
+    razbor.add_argument("--ext", nargs="+", help="Фильтр по расширениям (пример: .py .md)")
+    razbor.add_argument("--db", default="file_index.db", help="Путь к файлу базы данных (по умолчанию: file_index.db)")
     
     argumenty = razbor.parse_args()
     
