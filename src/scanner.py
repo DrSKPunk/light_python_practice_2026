@@ -1,5 +1,6 @@
 import os
 import time
+import hashlib
 
 class Skaner:
     def __init__(self, baza, put_k_papke):
@@ -9,10 +10,15 @@ class Skaner:
         self.obshiy_razmer = 0
         self.filtr_rasshireniy = None
         self.spisok_faylov = []
+        self.vychislyat_heshi = False  # флаг для вычисления хэшей
     
     def ustanovit_filtr(self, rasshireniya):
         if rasshireniya:
             self.filtr_rasshireniy = [r.lower() for r in rasshireniya]
+    
+    def vklyuchit_heshi(self):
+        """Включить вычисление хэшей"""
+        self.vychislyat_heshi = True
     
     def nuzhno_vklyuchat(self, put_k_faylu):
         if not os.path.isfile(put_k_faylu):
@@ -23,6 +29,19 @@ class Skaner:
             return rasshirenie in self.filtr_rasshireniy
         
         return True
+    
+    def vychislit_hash(self, put_k_faylu):
+        """Вычислить MD5 хэш содержимого файла"""
+        try:
+            hasher = hashlib.md5()
+            with open(put_k_faylu, 'rb') as f:
+                # Читаем блоками по 8192 байта для экономии памяти
+                for chunk in iter(lambda: f.read(8192), b''):
+                    hasher.update(chunk)
+            return hasher.hexdigest()
+        except (OSError, PermissionError) as e:
+            print(f"  Ошибка вычисления хэша для {put_k_faylu}: {e}")
+            return None
     
     def skanirovat(self):
         print("\nСканирование папки: {}".format(self.put_k_papke))
@@ -50,6 +69,10 @@ class Skaner:
         print("  Общий размер: {} байт".format(self.obshiy_razmer))
         print("  ID сканирования: {}".format(id_skanirovaniya))
         
+        # Если включено вычисление хэшей - показываем дубликаты
+        if self.vychislyat_heshi:
+            self.pokazat_duplikaty()
+        
         return id_skanirovaniya
     
     def _obrabotat_fayl(self, polniy_put):
@@ -63,7 +86,16 @@ class Skaner:
             izmenen = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stat.st_mtime))
             tip_fayla = os.path.splitext(polniy_put)[1].lower()
             
-            self.baza.dobavit_fayl(otnositelniy_put, razmer, izmenen, tip_fayla)
+            # Вычисляем хэш, если включено
+            hesh = None
+            if self.vychislyat_heshi:
+                # Проверяем, есть ли уже хэш в БД
+                hesh = self.baza.poluchit_hash_po_puti(otnositelniy_put)
+                if hesh is None:
+                    # Если нет - вычисляем
+                    hesh = self.vychislit_hash(polniy_put)
+            
+            self.baza.dobavit_fayl(otnositelniy_put, razmer, izmenen, tip_fayla, hesh)
             
             self.spisok_faylov.append(otnositelniy_put)
             self.kolichestvo_faylov += 1
@@ -71,3 +103,30 @@ class Skaner:
             
         except (OSError, PermissionError) as e:
             print("  Ошибка обработки файла {}: {}".format(polniy_put, str(e)))
+    
+    def pokazat_duplikaty(self):
+        """Показать дубликаты файлов"""
+        duplikaty = self.baza.nayti_duplikaty()
+        
+        print("\n=== ДУБЛИКАТЫ ФАЙЛОВ ===")
+        if not duplikaty:
+            print("  Дубликатов не найдено")
+            return
+        
+        print(f"  Найдено групп дубликатов: {len(duplikaty)}")
+        print()
+        
+        for i, (hesh, puti, kolichestvo) in enumerate(duplikaty, 1):
+            print(f"Группа {i}: {kolichestvo} файлов с хэшем {hesh[:16]}...")
+            for put in puti.split('; '):
+                print(f"    - {put}")
+            
+            # Показываем размер файлов (получаем из БД)
+            self.baza.kursor.execute(
+                "SELECT size FROM files WHERE path = ?", 
+                (puti.split('; ')[0],)
+            )
+            razmer = self.baza.kursor.fetchone()
+            if razmer:
+                print(f"    Размер: {razmer[0]} байт")
+            print()
