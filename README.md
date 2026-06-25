@@ -32,6 +32,18 @@ python src/main.py . --scan --ext .py --db my\_database.db
 
 
 
+Сканирование дубликатов
+
+python src/main.py . --scan --hash
+
+
+
+Показать дубликаты из базы данных
+
+python src/main.py . --duplicates
+
+
+
 Помощь
 
 python src/main.py -h
