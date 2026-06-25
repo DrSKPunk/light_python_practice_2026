@@ -44,6 +44,16 @@ python src/main.py . --duplicates
 
 
 
+Сравнение с бэкапом
+
+\--compare "Путь к бэкапу" (сравнение)
+
+\--history (история сравнений)
+
+\--show-comparison "id сравнения" (результаты сравнения по id)
+
+
+
 Помощь
 
 python src/main.py -h
